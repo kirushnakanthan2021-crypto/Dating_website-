@@ -8,6 +8,7 @@ A mobile-first dating website starter using Next.js 15, React 19, TypeScript and
 - Profile editing, discovery and likes
 - Matches list and realtime chat starter
 - Premium page placeholder (no payment collected)
+- Local camera/microphone test page (remote WebRTC calling not connected)
 - Admin placeholder, safety, privacy and terms draft pages
 - SQL schema for profiles, likes, matches, messages, blocks, reports and subscriptions
 
