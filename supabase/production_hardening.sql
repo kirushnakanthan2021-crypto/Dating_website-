@@ -192,3 +192,8 @@ begin
     alter publication supabase_realtime add table public.messages;
   end if;
 end $$;
+
+-- Restore read-only access to the signed-in user's subscription status.
+drop policy if exists "users read own subscription" on public.subscriptions;
+create policy "users read own subscription" on public.subscriptions
+for select to authenticated using (user_id = (select auth.uid()));
