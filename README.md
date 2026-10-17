@@ -18,8 +18,9 @@ A mobile-first dating website starter using Next.js 15, React 19, TypeScript and
 3. Create a Supabase project at https://database.new.
 4. Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to `.env.local`.
 5. Run `supabase/schema.sql` in Supabase SQL Editor.
-6. Configure email verification and redirect URLs in Supabase Auth.
-7. Run `npm install` and `npm run dev`, then open http://localhost:3000.
+6. Run `supabase/production_hardening.sql` in Supabase SQL Editor after the schema.
+7. Configure email verification and redirect URLs in Supabase Auth.
+8. Run `npm install` and `npm run dev`, then open http://localhost:3000.
 
 ## Important limitations
 This is a starter, not production-ready. Photo upload currently accepts a URL; add Supabase Storage upload policies. Discover demo profiles are illustrative, not real users. Chat needs block enforcement, abuse controls and rate limits. Video calls need WebRTC, authenticated signaling and TURN. Payments need a supported provider and server-verified signed webhooks. Admin page is a placeholder and needs server-side role checks. Privacy/terms drafts need local legal review. Add production age assurance, account deletion/export, moderation, spam protection, accessibility and security testing before launch.
