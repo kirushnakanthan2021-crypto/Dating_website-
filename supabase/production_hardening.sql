@@ -158,3 +158,37 @@ for delete to authenticated using (false);
 drop policy if exists "users insert own subscriptions" on public.subscriptions;
 drop policy if exists "users update own subscriptions" on public.subscriptions;
 drop policy if exists "users delete own subscriptions" on public.subscriptions;
+
+
+-- Final cleanup: remove legacy policy names left by earlier starter versions.
+drop policy if exists "participants can send messages to matches" on public.messages;
+drop policy if exists "users see own submitted reports" on public.reports;
+drop policy if exists "users see own subscription status" on public.subscriptions;
+drop policy if exists "users read own submitted reports" on public.reports;
+drop policy if exists "users read own subscription" on public.subscriptions;
+drop policy if exists "users create own blocks" on public.blocks;
+drop policy if exists "users remove own blocks" on public.blocks;
+
+-- The mutual-like function is trigger-only, not a public RPC endpoint.
+revoke execute on function public.create_match_on_mutual_like() from public, anon, authenticated;
+
+-- Index foreign-key columns used by joins and moderation queries.
+create index if not exists blocks_blocked_id_idx on public.blocks(blocked_id);
+create index if not exists matches_user_b_idx on public.matches(user_b);
+create index if not exists messages_sender_id_idx on public.messages(sender_id);
+create index if not exists reports_reported_id_idx on public.reports(reported_id);
+create index if not exists reports_reporter_id_idx on public.reports(reporter_id);
+create index if not exists subscriptions_user_id_idx on public.subscriptions(user_id);
+
+-- Enable Realtime delivery for chat messages.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'messages'
+  ) then
+    alter publication supabase_realtime add table public.messages;
+  end if;
+end $$;
