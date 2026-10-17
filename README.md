@@ -7,7 +7,7 @@ A mobile-first dating website built with **Next.js 15**, **React 19**, **TypeScr
 - Landing page + responsive design
 - Supabase Auth (signup / login / email verification callback)
 - Auto profile creation on signup
-- Profile editing (name, age, city, bio, photo URL, interests)
+- Profile editing (name, age, city, bio, interests) + Supabase Storage profile photo uploads (JPG/PNG/WEBP/GIF, max 5 MB)
 - Discover feed with like system
 - Mutual match automation (database trigger)
 - Matches list showing the other person’s name & photo
@@ -57,7 +57,7 @@ A mobile-first dating website built with **Next.js 15**, **React 19**, **TypeScr
 
 ## Important limitations (read before launch)
 
-- Photo upload currently accepts a **URL only**. Add Supabase Storage + policies for real uploads.
+- Profile photos use the public `profile-photos` bucket; uploads are limited to 5 MB and each signed-in member can write only inside their own user-id folder. Do not upload identity documents or sensitive images.
 - Discover demo profiles are illustrative, not real users.
 - Video calls only test local camera/mic. Full WebRTC + TURN is not implemented.
 - Payments / Premium are placeholders (no real billing).
