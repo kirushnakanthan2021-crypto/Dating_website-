@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Nav from "@/components/Nav";
 import { createClient } from "@/lib/supabase";
 
-export default function LoginPage() {
+function LoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/discover";
 
@@ -34,48 +34,56 @@ export default function LoginPage() {
   }
 
   return (
+    <div className="panel form-wrap">
+      <span className="eyebrow">Welcome back</span>
+      <h1>Good to see you.</h1>
+      <p className="muted">Log in to continue your conversations.</p>
+      <form onSubmit={submit}>
+        <div className="field">
+          <label>Email</label>
+          <input
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+          />
+        </div>
+        <div className="field">
+          <label>Password</label>
+          <input
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Your password"
+          />
+        </div>
+        <button className="btn primary" style={{ width: "100%" }} disabled={busy}>
+          {busy ? "Logging in…" : "Log in"}
+        </button>
+      </form>
+      {message && <div className="status">{message}</div>}
+      <p className="form-note">
+        New here?{" "}
+        <Link href="/signup" style={{ color: "var(--pink)", fontWeight: 700 }}>
+          Create an account
+        </Link>
+      </p>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <>
       <Nav />
       <main className="shell page">
-        <div className="panel form-wrap">
-          <span className="eyebrow">Welcome back</span>
-          <h1>Good to see you.</h1>
-          <p className="muted">Log in to continue your conversations.</p>
-          <form onSubmit={submit}>
-            <div className="field">
-              <label>Email</label>
-              <input
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-              />
-            </div>
-            <div className="field">
-              <label>Password</label>
-              <input
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Your password"
-              />
-            </div>
-            <button className="btn primary" style={{ width: "100%" }} disabled={busy}>
-              {busy ? "Logging in…" : "Log in"}
-            </button>
-          </form>
-          {message && <div className="status">{message}</div>}
-          <p className="form-note">
-            New here?{" "}
-            <Link href="/signup" style={{ color: "var(--pink)", fontWeight: 700 }}>
-              Create an account
-            </Link>
-          </p>
-        </div>
+        <Suspense fallback={<div className="panel form-wrap">Loading…</div>}>
+          <LoginForm />
+        </Suspense>
       </main>
     </>
   );

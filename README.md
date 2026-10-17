@@ -1,29 +1,82 @@
-# Pairly — Dating Website Starter
+# Pairly — Dating Website
 
-A mobile-first dating website starter using Next.js 15, React 19, TypeScript and Supabase.
+A mobile-first dating website built with **Next.js 15**, **React 19**, **TypeScript** and **Supabase**.
 
-## Included
-- Responsive landing page and styling
-- Supabase Auth signup/login
-- Profile editing, discovery and likes
-- Matches list and realtime chat starter
-- Premium page placeholder (no payment collected)
-- Local camera/microphone test page (remote WebRTC calling not connected)
-- Admin placeholder, safety, privacy and terms draft pages
-- SQL schema for profiles, likes, matches, messages, blocks, reports and subscriptions
+## Features
 
-## Run locally
-1. Install Node.js 20.9+.
-2. Copy `.env.example` to `.env.local`.
-3. Create a Supabase project at https://database.new.
-4. Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to `.env.local`.
-5. Run `supabase/schema.sql` in Supabase SQL Editor.
-6. Run `supabase/production_hardening.sql` in Supabase SQL Editor after the schema.
-7. Configure email verification and redirect URLs in Supabase Auth.
-8. Run `npm install` and `npm run dev`, then open http://localhost:3000.
+- Landing page + responsive design
+- Supabase Auth (signup / login / email verification callback)
+- Auto profile creation on signup
+- Profile editing (name, age, city, bio, photo URL, interests)
+- Discover feed with like system
+- Mutual match automation (database trigger)
+- Matches list showing the other person’s name & photo
+- Realtime private chat
+- Block & report controls
+- Local camera/microphone test page (WebRTC signaling not included)
+- Premium & Admin placeholders
+- Safety, Privacy and Terms pages
+- Row Level Security + production hardening SQL
+- Middleware protecting private routes
 
-## Important limitations
-This is a starter, not production-ready. Photo upload currently accepts a URL; add Supabase Storage upload policies. Discover demo profiles are illustrative, not real users. Chat needs block enforcement, abuse controls and rate limits. Video calls need WebRTC, authenticated signaling and TURN. Payments need a supported provider and server-verified signed webhooks. Admin page is a placeholder and needs server-side role checks. Privacy/terms drafts need local legal review. Add production age assurance, account deletion/export, moderation, spam protection, accessibility and security testing before launch.
+## Setup
 
-## Security
-Never commit `.env.local`, service-role keys or payment secrets. Review every RLS policy before storing real member data. Do not trust browser-submitted subscription status. The profile read policy is prototype-level and must be narrowed before public launch.
+1. Install **Node.js 20.9+**
+2. Clone the repo and run:
+   ```bash
+   npm install
+   ```
+3. Copy env file:
+   ```bash
+   cp .env.example .env.local
+   ```
+4. Create a free project at [https://database.new](https://database.new) (Supabase)
+5. Put these values in `.env.local`:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY
+   NEXT_PUBLIC_SITE_URL=http://localhost:3000
+   ```
+6. In Supabase SQL Editor run:
+   - `supabase/schema.sql`
+   - then `supabase/production_hardening.sql`
+7. In Supabase → Authentication → URL Configuration:
+   - Site URL: `http://localhost:3000`
+   - Redirect URLs: `http://localhost:3000/auth/callback`
+8. Start the app:
+   ```bash
+   npm run dev
+   ```
+   Open http://localhost:3000
+
+## How matching works
+
+1. User A likes User B → row in `likes`
+2. If User B also likes User A → trigger creates a row in `matches`
+3. Both users see each other on `/matches` and can open chat
+
+## Important limitations (read before launch)
+
+- Photo upload currently accepts a **URL only**. Add Supabase Storage + policies for real uploads.
+- Discover demo profiles are illustrative, not real users.
+- Video calls only test local camera/mic. Full WebRTC + TURN is not implemented.
+- Payments / Premium are placeholders (no real billing).
+- Admin page is a placeholder — needs server-side role checks.
+- Add age verification, moderation, rate limits, accessibility and security review before public launch.
+
+## Security notes
+
+- Never commit `.env.local` or service-role keys.
+- Review every RLS policy before storing real member data.
+- Do not trust browser-submitted subscription status.
+
+## Project structure
+
+```
+src/
+  app/           # pages (landing, discover, matches, chat, profile…)
+  components/    # Nav, SafetyActions
+  lib/           # Supabase browser + server clients
+middleware.ts    # protects /profile, /matches, /chat, /calls, /admin
+supabase/        # schema.sql + production_hardening.sql
+```
