@@ -9,3 +9,15 @@ export function createClient() {
   if (!url || !key) return null;
   return createBrowserClient(url, key);
 }
+
+export type Profile = {
+  id: string;
+  display_name: string;
+  age: number | null;
+  city: string | null;
+  bio: string | null;
+  photo_url: string | null;
+  interests: string[] | null;
+  created_at?: string;
+  updated_at?: string;
+};

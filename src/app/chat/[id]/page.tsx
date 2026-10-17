@@ -1,14 +1,196 @@
 "use client";
 
 import Link from "next/link";
-import {FormEvent,useEffect,useState} from "react";
-import {useParams} from "next/navigation";
+import { FormEvent, useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import Nav from "@/components/Nav";
-import {createClient} from "@/lib/supabase";
+import { createClient } from "@/lib/supabase";
 
-type Message={id:string;sender_id:string;body:string;created_at:string};
-export default function ChatPage(){const params=useParams<{id:string}>();const [messages,setMessages]=useState<Message[]>([]);const [body,setBody]=useState("");const [userId,setUserId]=useState("");const [notice,setNotice]=useState("Connect Supabase and sign in to use private chat.");
-useEffect(()=>{const s=createClient();if(!s)return;let channel:any;(async()=>{const {data:{user}}=await s.auth.getUser();if(!user){setNotice("Please log in to chat.");return;}setUserId(user.id);const {data:match}=await s.from("matches").select("id").eq("id",params.id).maybeSingle();if(!match){setNotice("A valid match is required before messaging.");return;}const {data,error}=await s.from("messages").select("id,sender_id,body,created_at").eq("match_id",params.id).order("created_at",{ascending:true}).limit(100);if(error){setNotice("Could not load messages. Check database setup and access rules.");return;}setMessages((data||[]) as Message[]);setNotice("");channel=s.channel("chat-"+params.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"match_id=eq."+params.id},(payload:any)=>{const m=payload.new as Message;setMessages(old=>old.some(x=>x.id===m.id)?old:[...old,m]);}).subscribe();})();return()=>{if(channel)s?.removeChannel(channel)}},[params.id]);
-async function send(e:FormEvent){e.preventDefault();const text=body.trim();if(!text)return;const s=createClient();if(!s||!userId){setNotice("Please log in and configure Supabase.");return;}const {error}=await s.from("messages").insert({match_id:params.id,sender_id:userId,body:text});if(error){setNotice(error.message);return;}setBody("");}
-return <><Nav/><main className="shell page"><Link href="/matches" className="muted">← Back to matches</Link><h1 className="page-title" style={{marginTop:16}}>Your conversation</h1><div className="panel" style={{maxWidth:760,marginTop:20}}><div style={{minHeight:260,maxHeight:440,overflowY:"auto",display:"grid",alignContent:"start",gap:10}}>{messages.map(m=><div key={m.id} style={{justifySelf:m.sender_id===userId?"end":"start",maxWidth:"80%",padding:"12px 15px",borderRadius:16,background:m.sender_id===userId?"#fff0f4":"#f6f1f6"}}><div>{m.body}</div><div className="small">{new Date(m.created_at).toLocaleTimeString()}</div></div>)}{!messages.length&&<div className="empty">Say hello when you’re ready.</div>}</div>{notice&&<div className="status">{notice}</div>}<form onSubmit={send} style={{display:"flex",gap:8,marginTop:18}}><input aria-label="Message" value={body} onChange={e=>setBody(e.target.value)} maxLength={2000} placeholder="Write a kind message…" style={{flex:1,minWidth:0,border:"1px solid var(--line)",borderRadius:999,padding:"12px 16px"}}/><button className="btn primary">Send</button></form><p className="site-warning">Never share passwords, financial details or verification codes in chat. Add block enforcement and abuse monitoring before public launch.</p></div></main></>;
+type Message = {
+  id: string;
+  sender_id: string;
+  body: string;
+  created_at: string;
+};
+
+export default function ChatPage() {
+  const params = useParams<{ id: string }>();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [body, setBody] = useState("");
+  const [userId, setUserId] = useState("");
+  const [partnerName, setPartnerName] = useState("Your conversation");
+  const [notice, setNotice] = useState(
+    "Connect Supabase and sign in to use private chat."
+  );
+
+  useEffect(() => {
+    const s = createClient();
+    if (!s) return;
+    let channel: ReturnType<typeof s.channel> | null = null;
+
+    (async () => {
+      const {
+        data: { user },
+      } = await s.auth.getUser();
+      if (!user) {
+        setNotice("Please log in to chat.");
+        return;
+      }
+      setUserId(user.id);
+
+      const { data: match } = await s
+        .from("matches")
+        .select("id, user_a, user_b")
+        .eq("id", params.id)
+        .maybeSingle();
+
+      if (!match) {
+        setNotice("A valid match is required before messaging.");
+        return;
+      }
+
+      const otherId = match.user_a === user.id ? match.user_b : match.user_a;
+      const { data: other } = await s
+        .from("profiles")
+        .select("display_name")
+        .eq("id", otherId)
+        .maybeSingle();
+      if (other?.display_name) setPartnerName(other.display_name);
+
+      const { data, error } = await s
+        .from("messages")
+        .select("id,sender_id,body,created_at")
+        .eq("match_id", params.id)
+        .order("created_at", { ascending: true })
+        .limit(100);
+
+      if (error) {
+        setNotice(
+          "Could not load messages. Check database setup and access rules."
+        );
+        return;
+      }
+
+      setMessages((data || []) as Message[]);
+      setNotice("");
+
+      channel = s
+        .channel("chat-" + params.id)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
+            filter: "match_id=eq." + params.id,
+          },
+          (payload) => {
+            const m = payload.new as Message;
+            setMessages((old) =>
+              old.some((x) => x.id === m.id) ? old : [...old, m]
+            );
+          }
+        )
+        .subscribe();
+    })();
+
+    return () => {
+      if (channel) s.removeChannel(channel);
+    };
+  }, [params.id]);
+
+  async function send(e: FormEvent) {
+    e.preventDefault();
+    const text = body.trim();
+    if (!text) return;
+    const s = createClient();
+    if (!s || !userId) {
+      setNotice("Please log in and configure Supabase.");
+      return;
+    }
+    const { error } = await s.from("messages").insert({
+      match_id: params.id,
+      sender_id: userId,
+      body: text,
+    });
+    if (error) {
+      setNotice(error.message);
+      return;
+    }
+    setBody("");
+  }
+
+  return (
+    <>
+      <Nav />
+      <main className="shell page">
+        <Link href="/matches" className="muted">
+          ← Back to matches
+        </Link>
+        <h1 className="page-title" style={{ marginTop: 16 }}>
+          {partnerName}
+        </h1>
+        <div className="panel" style={{ maxWidth: 760, marginTop: 20 }}>
+          <div
+            style={{
+              minHeight: 260,
+              maxHeight: 440,
+              overflowY: "auto",
+              display: "grid",
+              alignContent: "start",
+              gap: 10,
+            }}
+          >
+            {messages.map((m) => (
+              <div
+                key={m.id}
+                style={{
+                  justifySelf: m.sender_id === userId ? "end" : "start",
+                  maxWidth: "80%",
+                  padding: "12px 15px",
+                  borderRadius: 16,
+                  background:
+                    m.sender_id === userId ? "#fff0f4" : "#f6f1f6",
+                }}
+              >
+                <div>{m.body}</div>
+                <div className="small">
+                  {new Date(m.created_at).toLocaleTimeString()}
+                </div>
+              </div>
+            ))}
+            {!messages.length && (
+              <div className="empty">Say hello when you’re ready.</div>
+            )}
+          </div>
+          {notice && <div className="status">{notice}</div>}
+          <form
+            onSubmit={send}
+            style={{ display: "flex", gap: 8, marginTop: 18 }}
+          >
+            <input
+              aria-label="Message"
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              maxLength={2000}
+              placeholder="Write a kind message…"
+              style={{
+                flex: 1,
+                minWidth: 0,
+                border: "1px solid var(--line)",
+                borderRadius: 999,
+                padding: "12px 16px",
+              }}
+            />
+            <button className="btn primary">Send</button>
+          </form>
+          <p className="site-warning">
+            Never share passwords, financial details or verification codes in
+            chat. Add block enforcement and abuse monitoring before public
+            launch.
+          </p>
+        </div>
+      </main>
+    </>
+  );
 }
