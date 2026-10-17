@@ -197,3 +197,29 @@ end $$;
 drop policy if exists "users read own subscription" on public.subscriptions;
 create policy "users read own subscription" on public.subscriptions
 for select to authenticated using (user_id = (select auth.uid()));
+
+
+-- Public profile photos are display assets; only signed-in users may upload
+-- into their own user-id folder. Never store private identity documents here.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('profile-photos', 'profile-photos', true, 5242880,
+  array['image/jpeg','image/png','image/webp','image/gif'])
+on conflict (id) do update set public = true, file_size_limit = 5242880, allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "members upload own profile photos" on storage.objects;
+drop policy if exists "members update own profile photos" on storage.objects;
+drop policy if exists "members delete own profile photos" on storage.objects;
+create policy "members upload own profile photos" on storage.objects
+for insert to authenticated with check (
+  bucket_id = 'profile-photos' and (storage.foldername(name))[1] = (select auth.uid())::text
+);
+create policy "members update own profile photos" on storage.objects
+for update to authenticated using (
+  bucket_id = 'profile-photos' and (storage.foldername(name))[1] = (select auth.uid())::text
+) with check (
+  bucket_id = 'profile-photos' and (storage.foldername(name))[1] = (select auth.uid())::text
+);
+create policy "members delete own profile photos" on storage.objects
+for delete to authenticated using (
+  bucket_id = 'profile-photos' and (storage.foldername(name))[1] = (select auth.uid())::text
+);
