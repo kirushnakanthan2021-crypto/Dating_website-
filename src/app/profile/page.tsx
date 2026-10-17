@@ -10,6 +10,7 @@ export default function ProfilePage() {
   const [city, setCity] = useState("");
   const [bio, setBio] = useState("");
   const [photo, setPhoto] = useState("");
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [interests, setInterests] = useState("");
   const [message, setMessage] = useState("Connect Supabase to save your profile.");
   const [busy, setBusy] = useState(false);
@@ -62,6 +63,36 @@ export default function ProfilePage() {
       return;
     }
     setBusy(true);
+    let photoUrl = photo.trim() || null;
+    if (photoFile) {
+      if (photoFile.size > 5 * 1024 * 1024) {
+        setBusy(false);
+        setMessage("Photo must be 5 MB or smaller.");
+        return;
+      }
+      const extensions: Record<string, string> = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+        "image/gif": "gif",
+      };
+      const extension = extensions[photoFile.type];
+      if (!extension) {
+        setBusy(false);
+        setMessage("Choose a JPG, PNG, WEBP or GIF image.");
+        return;
+      }
+      const path = `${user.id}/${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await s.storage
+        .from("profile-photos")
+        .upload(path, photoFile, { contentType: photoFile.type, upsert: false });
+      if (uploadError) {
+        setBusy(false);
+        setMessage(`Photo upload failed: ${uploadError.message}`);
+        return;
+      }
+      photoUrl = s.storage.from("profile-photos").getPublicUrl(path).data.publicUrl;
+    }
     const interestList = interests
       .split(",")
       .map((x) => x.trim())
@@ -74,11 +105,15 @@ export default function ProfilePage() {
       age: n,
       city: city.trim() || null,
       bio: bio.trim() || null,
-      photo_url: photo.trim() || null,
+      photo_url: photoUrl,
       interests: interestList,
       updated_at: new Date().toISOString(),
     });
     setBusy(false);
+    if (!error && photoUrl) {
+      setPhoto(photoUrl);
+      setPhotoFile(null);
+    }
     setMessage(error ? error.message : "Profile saved.");
   }
 
@@ -130,17 +165,22 @@ export default function ProfilePage() {
               />
             </div>
             <div className="field">
-              <label>Photo URL</label>
+              <label>Profile photo</label>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
+              />
+              <span className="form-note">
+                JPG, PNG, WEBP or GIF · max 5 MB. You can also paste an existing
+                image URL below.
+              </span>
               <input
                 type="url"
                 value={photo}
                 onChange={(e) => setPhoto(e.target.value)}
-                placeholder="https://…"
+                placeholder="https://… (optional)"
               />
-              <span className="form-note">
-                This starter accepts a photo URL. Secure image uploads will need
-                Supabase Storage policies.
-              </span>
             </div>
             <div className="field">
               <label>Interests (comma separated)</label>
