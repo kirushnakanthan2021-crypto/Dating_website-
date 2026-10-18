@@ -33,9 +33,7 @@ export default function SignupPage() {
       password,
       options: {
         data: { display_name: name.trim() },
-        emailRedirectTo: typeof window !== "undefined"
-          ? `${window.location.origin}/auth/callback`
-          : undefined,
+        emailRedirectTo: "https://dateigapp.netlify.app/auth/callback",
       },
     });
 
