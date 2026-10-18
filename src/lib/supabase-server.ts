@@ -1,12 +1,13 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+// Public Supabase project settings. Environment variables override these defaults.
 export async function createServerSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://fqexkacmpzvcugpznxxz.supabase.co";
   const key =
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+    "sb_publishable_cB1rMFeV5tgOd-hfRf0lkQ_DowURIbn";
 
   const cookieStore = await cookies();
 
