@@ -114,7 +114,12 @@ export default function ProfilePage() {
       setPhoto(photoUrl);
       setPhotoFile(null);
     }
-    setMessage(error ? error.message : "Profile saved.");
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+    setMessage("Profile saved. Opening Discover…");
+    window.location.href = "/discover";
   }
 
   async function signOut() {
