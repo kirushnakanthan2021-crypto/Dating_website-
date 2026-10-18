@@ -2,13 +2,14 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+// Public Supabase project settings. Environment variables override these defaults.
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://fqexkacmpzvcugpznxxz.supabase.co";
 const key =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+  "sb_publishable_cB1rMFeV5tgOd-hfRf0lkQ_DowURIbn";
 
 export function createClient() {
-  if (!url || !key) return null;
   return createBrowserClient(url, key);
 }
 
