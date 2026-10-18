@@ -12,8 +12,6 @@ export default function SignupPage() {
   const [adult, setAdult] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
-  const [awaitingCode, setAwaitingCode] = useState(false);
-  const [token, setToken] = useState("");
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -33,7 +31,12 @@ export default function SignupPage() {
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
-      options: { data: { display_name: name.trim() } },
+      options: {
+        data: { display_name: name.trim() },
+        emailRedirectTo: typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback`
+          : undefined,
+      },
     });
 
     if (error) {
@@ -54,52 +57,8 @@ export default function SignupPage() {
       return;
     }
 
-    setAwaitingCode(true);
     setBusy(false);
-    setMessage("Verification code sent. Check your email inbox and Spam folder, then enter the code below.");
-  }
-
-  async function verifyCode(e: FormEvent) {
-    e.preventDefault();
-    setMessage("");
-    const supabase = createClient();
-    if (!supabase) {
-      setMessage("Supabase configuration is missing.");
-      return;
-    }
-    const cleanToken = token.trim();
-    if (!/^\d{6}$/.test(cleanToken)) {
-      setMessage("Enter the 6-digit code from your email.");
-      return;
-    }
-
-    setBusy(true);
-    const { data, error } = await supabase.auth.verifyOtp({
-      email: email.trim(),
-      token: cleanToken,
-      type: "signup",
-    });
-
-    if (error) {
-      setBusy(false);
-      setMessage(error.message);
-      return;
-    }
-
-    if (data.user) {
-      const { error: profileError } = await supabase.from("profiles").upsert({
-        id: data.user.id,
-        display_name: name.trim().slice(0, 60) || "New member",
-        updated_at: new Date().toISOString(),
-      });
-      if (profileError) {
-        setBusy(false);
-        setMessage("Email verified, but your profile could not be saved. Please log in and try again.");
-        return;
-      }
-    }
-
-    window.location.href = "/profile";
+    setMessage("Account created. Check your email for the confirmation link, open it to verify your email, then log in.");
   }
 
   return (
@@ -108,121 +67,81 @@ export default function SignupPage() {
       <main className="shell page">
         <div className="panel form-wrap">
           <span className="eyebrow">Your story starts here</span>
-          <h1>{awaitingCode ? "Verify your email." : "Create your profile."}</h1>
-          <p className="muted">
-            {awaitingCode
-              ? `We sent a 6-digit verification code to ${email}. Enter it here to finish creating your account.`
-              : "A few details to get started."}
-          </p>
+          <h1>Create your profile.</h1>
+          <p className="muted">A few details to get started.</p>
 
-          {!awaitingCode ? (
-            <form onSubmit={submit}>
-              <div className="field">
-                <label>Display name</label>
-                <input
-                  required
-                  maxLength={60}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="What should people call you?"
-                />
-              </div>
-              <div className="field">
-                <label>Email</label>
-                <input
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                />
-              </div>
-              <div className="field">
-                <label>Password (at least 8 characters)</label>
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  minLength={8}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Create a strong password"
-                />
-              </div>
-              <label
-                style={{
-                  display: "flex",
-                  gap: 10,
-                  alignItems: "start",
-                  fontSize: 13,
-                  lineHeight: 1.6,
-                  margin: "18px 0",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={adult}
-                  onChange={(e) => setAdult(e.target.checked)}
-                  style={{ marginTop: 4 }}
-                />
-                I confirm I am 18 or older and agree to the{" "}
-                <Link href="/terms" style={{ color: "var(--pink)" }}>
-                  Terms
-                </Link>{" "}
-                and{" "}
-                <Link href="/privacy" style={{ color: "var(--pink)" }}>
-                  Privacy Policy
-                </Link>
-                .
-              </label>
-              <button className="btn primary" style={{ width: "100%" }} disabled={busy}>
-                {busy ? "Creating account…" : "Create free account"}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={verifyCode}>
-              <div className="field">
-                <label>6-digit email verification code</label>
-                <input
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  pattern="[0-9]{6}"
-                  maxLength={6}
-                  required
-                  value={token}
-                  onChange={(e) => setToken(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  placeholder="Enter code"
-                />
-              </div>
-              <button className="btn primary" style={{ width: "100%" }} disabled={busy}>
-                {busy ? "Verifying…" : "Verify email and create account"}
-              </button>
-              <button
-                type="button"
-                className="btn"
-                style={{ width: "100%", marginTop: 10 }}
-                disabled={busy}
-                onClick={() => {
-                  setAwaitingCode(false);
-                  setToken("");
-                  setMessage("");
-                }}
-              >
-                Use a different email
-              </button>
-            </form>
-          )}
+          <form onSubmit={submit}>
+            <div className="field">
+              <label>Display name</label>
+              <input
+                required
+                maxLength={60}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="What should people call you?"
+              />
+            </div>
+            <div className="field">
+              <label>Email</label>
+              <input
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+              />
+            </div>
+            <div className="field">
+              <label>Password (at least 8 characters)</label>
+              <input
+                type="password"
+                autoComplete="new-password"
+                minLength={8}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Create a strong password"
+              />
+            </div>
+            <label
+              style={{
+                display: "flex",
+                gap: 10,
+                alignItems: "start",
+                fontSize: 13,
+                lineHeight: 1.6,
+                margin: "18px 0",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={adult}
+                onChange={(e) => setAdult(e.target.checked)}
+                style={{ marginTop: 4 }}
+              />
+              I confirm I am 18 or older and agree to the{" "}
+              <Link href="/terms" style={{ color: "var(--pink)" }}>
+                Terms
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" style={{ color: "var(--pink)" }}>
+                Privacy Policy
+              </Link>
+              .
+            </label>
+            <button className="btn primary" style={{ width: "100%" }} disabled={busy}>
+              {busy ? "Creating account…" : "Create free account"}
+            </button>
+          </form>
 
           {message && <div className="status" role="status">{message}</div>}
-          {!awaitingCode && (
-            <p className="form-note">
-              Already joined?{" "}
-              <Link href="/login" style={{ color: "var(--pink)", fontWeight: 700 }}>
-                Log in
-              </Link>
-            </p>
-          )}
+          <p className="form-note">
+            Already joined?{" "}
+            <Link href="/login" style={{ color: "var(--pink)", fontWeight: 700 }}>
+              Log in
+            </Link>
+          </p>
         </div>
       </main>
     </>
