@@ -8,12 +8,11 @@ export async function middleware(request: NextRequest) {
     request: { headers: request.headers },
   });
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://fqexkacmpzvcugpznxxz.supabase.co";
   const key =
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !key) return response;
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+    "sb_publishable_cB1rMFeV5tgOd-hfRf0lkQ_DowURIbn";
 
   const supabase = createServerClient(url, key, {
     cookies: {
